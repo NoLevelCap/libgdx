@@ -2,6 +2,7 @@ package com.badlogic.gdx.graphics.g2d.freetype.filters;
 
 import java.nio.ByteBuffer;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 
@@ -186,7 +187,7 @@ public class BlurUtils {
 		int w = pix.getWidth();
 		int h = pix.getHeight();
 		
-		if (1==3 && pix.getFormat()==Format.RGBA8888) {
+		if (pix.getFormat()==Format.RGBA8888) {
 			ByteBuffer buf = pix.getPixels();
 			buf.clear();
 			
@@ -220,8 +221,13 @@ public class BlurUtils {
 		if (pix.getFormat()==Format.RGBA8888) {
 			ByteBuffer buf = pix.getPixels();
 			buf.rewind();
-			for (int i=0; i<w*h; i+=4) {
-				res[i] = (buf.get() << 24) | (buf.get() << 16) | (buf.get() << 8) | (buf.get());
+			for (int i=0; i<w*h; i++) {
+				int R = buf.get() & 0xFF;
+				int G = buf.get() & 0xFF;
+				int B = buf.get() & 0xFF;
+				int A = buf.get() & 0xFF;
+				
+				res[i] = (R << 24) | (G << 16) | (B << 8) | A;
 			}
 			buf.flip();
 		} else {

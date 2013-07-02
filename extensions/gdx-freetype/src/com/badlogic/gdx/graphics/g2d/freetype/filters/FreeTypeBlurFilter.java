@@ -29,25 +29,18 @@ public class FreeTypeBlurFilter implements FreeTypeFilter {
 		Pixmap.setBlending(Blending.None);
 		Pixmap.setFilter(Filter.NearestNeighbour);
 		
-		int[] rgba = BlurUtils.toRGBA(pixmap);
-		BlurUtils.toPixmap(rgba, pixmap);
-		
-		
 		int pad = 4;
 		Pixmap px = new Pixmap(w + pad*2, h + pad*2, pixmap.getFormat());
 		px.drawPixmap(pixmap, pad, pad);
-		
-		
-		
 		pixmap.dispose();
+		pixmap = px;
 		
+		//apply blur
+		int[] rgba = BlurUtils.toRGBA(pixmap);
+		rgba = BlurUtils.blur(rgba, pixmap.getWidth(), pixmap.getHeight(), blurRadius, blurIterations);
 		
-		//get int[] array from pixmap
-		//int[] rgba = BlurUtils.toRGBA(px);
-		
-		
-		
-		return px;
+		BlurUtils.toPixmap(rgba, pixmap);
+		return pixmap;
 	}
 
 }
