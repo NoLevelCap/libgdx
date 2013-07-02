@@ -34,6 +34,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeType.GlyphMetrics;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeType.GlyphSlot;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeType.Library;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeType.SizeMetrics;
+import com.badlogic.gdx.graphics.g2d.freetype.filters.FreeTypeFilter;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
@@ -59,6 +60,8 @@ public class FreeTypeFontGenerator implements Disposable {
 	final Library library;
 	final Face face;
 	final String filePath;
+	
+	protected Array<FreeTypeFilter> filters;
 
 	/** The maximum texture size allowed by generateData, when storing in a texture atlas. 
 	 * Multiple texture pages will be created if necessary. */
@@ -300,6 +303,14 @@ public class FreeTypeFontGenerator implements Disposable {
 			GlyphMetrics metrics = slot.getMetrics();
 			Bitmap bitmap = slot.getBitmap();
 			Pixmap pixmap = bitmap.getPixmap(Format.RGBA8888);
+			
+			if (filters!=null && filters.size!=0) {
+				for (int j=0; j<filters.size; j++) {
+					FreeTypeFilter filter = filters.get(j);
+					pixmap = filter.apply(pixmap);
+				}
+			}
+			
 			String name = packPrefix + c;
 			Rectangle rect = packer.pack(name, pixmap);
 			
@@ -355,6 +366,18 @@ public class FreeTypeFontGenerator implements Disposable {
 			packer.dispose();
 		}
 		return data;
+	}
+	
+	public void addFilter(FreeTypeFilter filter) {
+		getFilters().add(filter);
+	}
+	
+	public void removeFilter(FreeTypeFilter filter) {
+		getFilters().removeValue(filter, true);
+	}
+	
+	public Array<FreeTypeFilter> getFilters() {
+		return filters==null ? (filters = new Array<FreeTypeFilter>()) : filters;
 	}
 
 	/** Cleans up all resources of the generator. Call this if you no longer use the generator. */
