@@ -181,7 +181,23 @@ public class BlurUtils {
 		return srcPixels;
 	}
 	
-	
+	public static void mult(int[] rgba, Color color) {
+		if (color==null)
+			return;
+		
+		
+		for (int i=0; i<rgba.length; i++) {
+			int value = rgba[i];
+			
+			int R = ((value & 0xff000000) >>> 24);
+			int G = ((value & 0x00ff0000) >>> 16);
+			int B = ((value & 0x0000ff00) >>> 8);
+			int A = ((value & 0x000000ff));
+			
+			rgba[i] = ((int)(R * color.r) << 24) | ((int)(G * color.g) << 16) 
+							| ((int)(B * color.b) << 8) | (int)(A * color.a);
+		}
+	}
 
 	public static void toPixmap(int[] rgba, Pixmap pix) {
 		int w = pix.getWidth();
@@ -193,7 +209,6 @@ public class BlurUtils {
 			
 			for (int i=0; i<w*h; i++) {
 				int value = rgba[i];
-				
 				
 				int R = ((value & 0xff000000) >>> 24);
 				int G = ((value & 0x00ff0000) >>> 16);
@@ -239,4 +254,22 @@ public class BlurUtils {
 		}
 		return res;
 	}
+	
+	public static int[] translate(int[] rgba, int width, int height, int xOff, int yOff) {
+		int[] res = new int[rgba.length];
+		
+		for (int y=0; y<height; y++) {
+			for (int x=0; x<width; x++) {
+				int posDst = x + (y * width);
+				
+				int xOffPos = Math.max(0, Math.min(width-1, x - xOff));
+				int yOffPos = Math.max(0, Math.min(height-1, y - yOff));
+				int posSrc = xOffPos + (yOffPos * width);
+				
+				res[posDst] = rgba[posSrc];
+			}
+		}
+		return res;
+	}
+	
 }

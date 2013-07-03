@@ -25,7 +25,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeBitmapFontData;
-import com.badlogic.gdx.graphics.g2d.freetype.filters.FreeTypeBlurFilter;
+import com.badlogic.gdx.graphics.g2d.freetype.filters.FreeTypeShadowFilter;
 import com.badlogic.gdx.tests.utils.GdxTest;
 
 public class FreeTypeFilterTest extends GdxTest {
@@ -39,7 +39,7 @@ public class FreeTypeFilterTest extends GdxTest {
 		FileHandle fontFile = Gdx.files.internal("data/arial.ttf");
 		
 		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fontFile);
-		generator.addFilter(new FreeTypeBlurFilter(1, 2));
+		generator.addFilter(new FreeTypeShadowFilter(Color.BLACK, 1, 1, 1, 2, 3));
 		
 		ftFont = generator.generateFont(15, FreeTypeFontGenerator.DEFAULT_CHARS, false);
 		
@@ -48,13 +48,15 @@ public class FreeTypeFilterTest extends GdxTest {
 
 	@Override
 	public void render () {
-		Gdx.gl.glClearColor(0.2f, 0.2f, 0.2f, 1);
+		Gdx.gl.glClearColor(0.5f, 0.5f, 0.5f, 1);
 		Gdx.gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
-
+		
 		batch.begin();
+		
 		ftFont.setColor(Color.WHITE);
 		ftFont.drawMultiLine(batch, "This is a test\nAnd another line\n()Â§$%&/!12390#", 100, 112);
-		batch.draw(ftFont.getRegion(), 300, 0);
+		
+		batch.draw(ftFont.getRegion(), 300, 0, ftFont.getRegion().getRegionWidth()*2, ftFont.getRegion().getRegionHeight()*2);
 		batch.end();
 	}
 
