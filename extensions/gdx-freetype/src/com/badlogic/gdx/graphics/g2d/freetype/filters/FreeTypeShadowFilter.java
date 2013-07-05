@@ -93,7 +93,7 @@ public class FreeTypeShadowFilter implements FreeTypeFilter {
 				
 				float alpha = origA + shadowA * (1f - origA);
 				
-				//blend with alpha background in tact
+				//blend foreground text with shadow background (porter duff)
 				float tR = (origR * origA + shadowR * shadowA * (1f - origA)) / alpha;
 				float tG = (origG * origA + shadowG * shadowA * (1f - origA)) / alpha;
 				float tB = (origG * origA + shadowB * shadowA * (1f - origA)) / alpha;

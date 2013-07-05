@@ -39,7 +39,7 @@ public class FreeTypeFilterTest extends GdxTest {
 		FileHandle fontFile = Gdx.files.internal("data/arial.ttf");
 		
 		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fontFile);
-		generator.addFilter(new FreeTypeShadowFilter(Color.BLACK, 1, 1, 1, 2, 3));
+		generator.addFilter(new FreeTypeShadowFilter(Color.BLUE, 1, 1, 1, 2, 3));
 		
 		ftFont = generator.generateFont(15, FreeTypeFontGenerator.DEFAULT_CHARS, false);
 		
