@@ -118,6 +118,8 @@ public class FreeTypePackTest extends GdxTest {
 		float x = 10;
 		float y = Gdx.graphics.getHeight()-10;
 		
+		int renderCalls = 0;
+		
 		//NOTE: Before production release on mobile, you should cache the array from values() 
 		//inside the Enum in order to reduce allocations in the render loop.
 		for (FontStyle style : FontStyle.values()) {
@@ -153,13 +155,13 @@ public class FreeTypePackTest extends GdxTest {
 			r.getTexture().dispose(); //dispose the texture since we own it
 		batch.dispose();
 	}
-	
-	//Utility method to grab a font by style/size pair
-	public BitmapFont getFont(FontStyle style, FontSize size) {
+
+	// Utility method to grab a font by style/size pair
+	public BitmapFont getFont (FontStyle style, FontSize size) {
 		return fontMap.get(style).get(size);
 	}
-	
-	protected int createFonts() {
+
+	protected int createFonts () {
 		////////////////////////////////////////////////////////////////////////////////////////////////////////
 		////////Steps to use multiple FreeTypeFontGenerators with a single texture atlas://////////////////////
 		//1. Create a new PixmapPacker big enough to fit all your desired glyphs
@@ -243,14 +245,14 @@ public class FreeTypePackTest extends GdxTest {
 		//for the demo, show how many glyphs we loaded
 		return fontCount * CHARACTERS.length();
 	}
-	
-	//We use a nested EnumMap for fast access
+
+	// We use a nested EnumMap for fast access
 	class FontMap<T> extends EnumMap<FontStyle, EnumMap<FontSize, T>> {
-		
-		public FontMap() {
+
+		public FontMap () {
 			super(FontStyle.class);
-			
-			//create the enum map for each FontSize
+
+			// create the enum map for each FontSize
 			for (FontStyle style : FontStyle.values()) {
 				put(style, new EnumMap<FontSize, T>(FontSize.class));
 			}
