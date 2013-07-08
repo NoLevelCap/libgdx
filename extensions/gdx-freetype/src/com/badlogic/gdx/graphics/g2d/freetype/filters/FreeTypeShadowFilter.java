@@ -60,6 +60,7 @@ public class FreeTypeShadowFilter implements FreeTypeFilter {
 		//apply offset, colorization, and blending
 		rgba = process(shadow, rgba, w, h, color, xOff, yOff);
 		
+		//place the data on the pixmap
 		BlurUtils.toPixmap(rgba, pixmap);
 		
 		return pixmap;
@@ -80,12 +81,17 @@ public class FreeTypeShadowFilter implements FreeTypeFilter {
 				float origA = ((origValue & 0x000000ff)) / 255f;
 				
 				//get offset position
-				int xOffPos = Math.max(0, Math.min(width-1, x - xOff));
-				int yOffPos = Math.max(0, Math.min(height-1, y - yOff));
+				int xOffPos = x - xOff;
+				int yOffPos = y - yOff;
 				int posSrc = xOffPos + (yOffPos * width);
 				
 				//get the offset shadow color, tinted
-				int value = rgba[posSrc];
+				int value = 0x00000000;
+				
+				//if the offset is out of bounds, use transparent white 
+				if (xOffPos >= 0 && yOffPos >= 0 && xOffPos < width && yOffPos < height)
+					value = rgba[posSrc];
+				
 				float shadowR = ((value & 0xff000000) >>> 24) / 255f * color.r;
 				float shadowG = ((value & 0x00ff0000) >>> 16) / 255f * color.g;
 				float shadowB = ((value & 0x0000ff00) >>> 8) / 255f * color.b;
