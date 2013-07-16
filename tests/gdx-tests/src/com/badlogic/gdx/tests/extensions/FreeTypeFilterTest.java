@@ -25,6 +25,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeBitmapFontData;
+import com.badlogic.gdx.graphics.g2d.freetype.filters.FreeTypePaddingFilter;
 import com.badlogic.gdx.graphics.g2d.freetype.filters.FreeTypeShadowFilter;
 import com.badlogic.gdx.tests.utils.GdxTest;
 
@@ -32,18 +33,20 @@ public class FreeTypeFilterTest extends GdxTest {
 	
 	SpriteBatch batch;
 	BitmapFont ftFont;
-
+	OrthographicCamera cam;
+	
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
 		FileHandle fontFile = Gdx.files.internal("data/arial.ttf");
 		
 		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fontFile);
-		generator.addFilter(new FreeTypeShadowFilter(Color.BLUE, 1, 1, 1, 2, 3));
-		
-		ftFont = generator.generateFont(15, FreeTypeFontGenerator.DEFAULT_CHARS, false);
-		
+		generator.addFilter(new FreeTypePaddingFilter(0, 0, 30, 0));
+		generator.addFilter(new FreeTypeShadowFilter(Color.BLACK, 1, 1, 1, 2, 0));
+		ftFont = generator.generateFont(15, FreeTypeFontGenerator.DEFAULT_CHARS, true);
 		generator.dispose();
+		
+		cam = new OrthographicCamera();
 	}
 
 	@Override
@@ -51,6 +54,8 @@ public class FreeTypeFilterTest extends GdxTest {
 		Gdx.gl.glClearColor(0.5f, 0.5f, 0.5f, 1);
 		Gdx.gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
 		
+		cam.setToOrtho(true);
+		batch.setProjectionMatrix(cam.combined);
 		batch.begin();
 		
 		ftFont.setColor(Color.WHITE);

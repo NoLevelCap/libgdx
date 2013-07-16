@@ -44,5 +44,11 @@ public class FreeTypePaddingFilter implements FreeTypeFilter {
 		return ret;
 	}
 	
+	public int top() {
+		return top;
+	}
 	
+	public int left() {
+		return left;
+	}
 }
