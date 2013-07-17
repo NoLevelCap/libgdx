@@ -90,9 +90,11 @@ public class LwjglAWTCanvas implements Application {
 				@Override
 				public void paintGL () {
 					try {
-						LwjglAWTCanvas.this.render();
-						swapBuffers();
-						repaint();
+						boolean render = LwjglAWTCanvas.this.render();
+						if (render) {
+							swapBuffers();
+							repaint();
+						}
 					} catch (LWJGLException ex) {
 						throw new GdxRuntimeException(ex);
 					}
@@ -217,14 +219,15 @@ public class LwjglAWTCanvas implements Application {
 			throw new GdxRuntimeException(ex);
 		}
 	}
-
-	void render () {
-		if (!running) return;
+	
+	boolean render () {
+		if (!running) return false;
 		
 		setGlobals();
 		canvas.setCursor(cursor);
-		graphics.updateTime();
-
+		
+		boolean shouldRender = false;
+		
 		int width = Math.max(1, graphics.getWidth());
 		int height = Math.max(1, graphics.getHeight());
 		if (lastWidth != width || lastHeight != height) {
@@ -233,7 +236,9 @@ public class LwjglAWTCanvas implements Application {
 			Gdx.gl.glViewport(0, 0, lastWidth, lastHeight);
 			resize(width, height);
 			listener.resize(width, height);
+			shouldRender = true;
 		}
+		
 
 		synchronized (runnables) {
 			executedRunnables.clear();
@@ -241,6 +246,7 @@ public class LwjglAWTCanvas implements Application {
 			runnables.clear();
 
 			for (int i = 0; i < executedRunnables.size(); i++) {
+				shouldRender = true;
 				try {
 					executedRunnables.get(i).run();
 				} catch (Throwable t) {
@@ -250,14 +256,19 @@ public class LwjglAWTCanvas implements Application {
 		}
 
 		input.processEvents();
+		
+		shouldRender |= graphics.shouldRender();
+		
 		if (running) {
-			listener.render();
+			if (shouldRender)
+				listener.render();
 			if (audio != null) {
 				audio.update();
 			}
 		}
+		return shouldRender;
 	}
-
+	
 	/** Called after {@link ApplicationListener} create and resize, but before the game loop iteration. */
 	protected void start () {
 	}
