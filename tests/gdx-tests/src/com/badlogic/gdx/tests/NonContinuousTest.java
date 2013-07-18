@@ -29,6 +29,7 @@ public class NonContinuousTest extends GdxTest {
 			@Override
 			public boolean touchDown (int screenX, int screenY, int pointer, int button) {
 				clicks++;
+				Gdx.graphics.requestRendering();
 				return true;
 			}
 		});

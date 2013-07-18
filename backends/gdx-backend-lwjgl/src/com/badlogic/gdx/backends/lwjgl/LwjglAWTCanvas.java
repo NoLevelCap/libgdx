@@ -93,8 +93,8 @@ public class LwjglAWTCanvas implements Application {
 						boolean render = LwjglAWTCanvas.this.render();
 						if (render) {
 							swapBuffers();
-							repaint();
 						}
+						repaint();
 					} catch (LWJGLException ex) {
 						throw new GdxRuntimeException(ex);
 					}
@@ -255,9 +255,9 @@ public class LwjglAWTCanvas implements Application {
 			}
 		}
 
-		input.processEvents();
-		
 		shouldRender |= graphics.shouldRender();
+		
+		input.processEvents();
 		
 		if (running) {
 			if (shouldRender)

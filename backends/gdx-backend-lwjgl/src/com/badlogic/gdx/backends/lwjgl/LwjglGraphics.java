@@ -435,7 +435,7 @@ public class LwjglGraphics implements Graphics {
 		synchronized (this) {
 			boolean rq = requestRendering;
 			requestRendering = false;
-			return rq || isContinuous || (canvas==null && Display.isDirty()); //TODO: ?? 
+			return rq || isContinuous || (canvas==null && Display.isDirty()); //TODO: ?? will this work with LwjglCanvas?
 		}
 	}
 

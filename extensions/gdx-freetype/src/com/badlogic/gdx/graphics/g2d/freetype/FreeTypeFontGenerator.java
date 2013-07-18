@@ -34,6 +34,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeType.GlyphMetrics;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeType.GlyphSlot;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeType.Library;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeType.SizeMetrics;
+import com.badlogic.gdx.graphics.g2d.freetype.filters.FreeTypeFilter;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
@@ -59,6 +60,8 @@ public class FreeTypeFontGenerator implements Disposable {
 	final Library library;
 	final Face face;
 	final String filePath;
+	
+	protected Array<FreeTypeFilter> filters;
 
 	/** The maximum texture size allowed by generateData, when storing in a texture atlas. 
 	 * Multiple texture pages will be created if necessary. */
@@ -227,7 +230,7 @@ public class FreeTypeFontGenerator implements Disposable {
 	public FreeTypeBitmapFontData generateData (int size, String characters, boolean flip, PixmapPacker packer) {
 		FreeTypeBitmapFontData data = new FreeTypeBitmapFontData();
 		if (!FreeType.setPixelSizes(face, 0, size)) throw new GdxRuntimeException("Couldn't set size for font");
-
+		
 		// set general font data
 		SizeMetrics fontMetrics = face.getSize().getMetrics();
 		data.flipped = flip;
@@ -300,6 +303,22 @@ public class FreeTypeFontGenerator implements Disposable {
 			GlyphMetrics metrics = slot.getMetrics();
 			Bitmap bitmap = slot.getBitmap();
 			Pixmap pixmap = bitmap.getPixmap(Format.RGBA8888);
+			
+			
+			int pixWidthDiff = 0; 
+			int pixHeightDiff = 0;
+			
+			if (filters!=null && filters.size!=0) {
+				for (int j=0; j<filters.size; j++) {
+					FreeTypeFilter filter = filters.get(j);
+					pixmap = filter.apply(pixmap);
+					
+					pixWidthDiff += filter.left();
+					pixHeightDiff += filter.top();
+				}
+			}
+			 
+			
 			String name = packPrefix + c;
 			Rectangle rect = packer.pack(name, pixmap);
 			
@@ -313,8 +332,10 @@ public class FreeTypeFontGenerator implements Disposable {
 			glyph.page = pIndex;
 			glyph.width = pixmap.getWidth();
 			glyph.height = pixmap.getHeight();
-			glyph.xoffset = slot.getBitmapLeft();
-			glyph.yoffset = flip ? -slot.getBitmapTop() + (int)baseLine : -(glyph.height - slot.getBitmapTop()) - (int)baseLine;
+			glyph.xoffset = slot.getBitmapLeft() - pixWidthDiff;
+			glyph.yoffset = flip 
+						? -slot.getBitmapTop() + (int)baseLine + pixHeightDiff - pixHeightDiff
+						: -(glyph.height - slot.getBitmapTop()) - (int)baseLine + pixHeightDiff;
 			glyph.xadvance = FreeType.toInt(metrics.getHoriAdvance());
 			glyph.srcX = (int)rect.x;
 			glyph.srcY = (int)rect.y;
@@ -355,6 +376,18 @@ public class FreeTypeFontGenerator implements Disposable {
 			packer.dispose();
 		}
 		return data;
+	}
+	
+	public void addFilter(FreeTypeFilter filter) {
+		getFilters().add(filter);
+	}
+	
+	public void removeFilter(FreeTypeFilter filter) {
+		getFilters().removeValue(filter, true);
+	}
+	
+	public Array<FreeTypeFilter> getFilters() {
+		return filters==null ? (filters = new Array<FreeTypeFilter>()) : filters;
 	}
 
 	/** Cleans up all resources of the generator. Call this if you no longer use the generator. */
