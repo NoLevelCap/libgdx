@@ -26,6 +26,7 @@ import com.badlogic.gdx.graphics.Mesh;
 import com.badlogic.gdx.graphics.Mesh.VertexDataType;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.VertexAttribute;
+import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.VertexAttributes.Usage;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
@@ -93,7 +94,20 @@ public class SpriteBatch implements Disposable {
 	/** the maximum number of sprites rendered in one batch so far **/
 	public int maxSpritesInBatch = 0;
 	private ShaderProgram customShader = null;
-
+	
+	protected CustomAttribs customAttribs;
+	private int vertexSize;
+	
+	public static interface CustomAttribs {
+		public VertexAttribute[] getAttributes(); 
+		
+		public int draw(float[] vertices, int idx,
+					float x1, float y1, float c1, float u1, float v1,
+					float x2, float y2, float c2, float u2, float v2,
+					float x3, float y3, float c3, float u3, float v3,
+					float x4, float y4, float c4, float u4, float v4); 
+	}
+	
 	/** Constructs a new SpriteBatch. Sets the projection matrix to an orthographic projection with y-axis point upwards, x-axis
 	 * point to the right and the origin being in the bottom left corner of the screen. The projection will be pixel perfect with
 	 * respect to the screen resolution. */
@@ -126,6 +140,10 @@ public class SpriteBatch implements Disposable {
 	public SpriteBatch (int size, int buffers) {
 		this(size, buffers, null);
 	}
+	
+	public SpriteBatch (int size, int buffers, ShaderProgram defaultShader) {
+		this(size, buffers, defaultShader, null);
+	}
 
 	/** Constructs a new SpriteBatch. Sets the projection matrix to an orthographic projection with y-axis point upwards, x-axis
 	 * point to the right and the origin being in the bottom left corner of the screen. The projection will be pixel perfect with
@@ -138,21 +156,50 @@ public class SpriteBatch implements Disposable {
 	 * @param size the batch size in number of sprites
 	 * @param buffers the number of buffers to use. only makes sense with VBOs. This is an expert function.
 	 * @param defaultShader the default shader to use. This is not owned by the SpriteBatch and must be disposed separately. */
-	public SpriteBatch (int size, int buffers, ShaderProgram defaultShader) {
+	public SpriteBatch (int size, int buffers, ShaderProgram defaultShader, CustomAttribs customAttribs) {
 		if (size > 5460) {
 			throw new GdxRuntimeException("Can't have more than 5460 sprites per batch");
 		}
 		this.buffers = new Mesh[buffers];
 
+		VertexAttribute[] cAttribList = customAttribs!=null ? customAttribs.getAttributes() : null;
+		int genAttribCount = cAttribList!=null ? cAttribList.length : 0;
+		
+		if (genAttribCount > 0)
+			this.customAttribs = customAttribs;
+		
+		//the default attribtue count, XY + C + UV
+		final int defaultSpriteSize = (2 + 1 + 2) * 4;
+		vertexSize = defaultSpriteSize;
+		
+		if (genAttribCount > 0 && defaultShader == null)
+			throw new IllegalArgumentException("Custom shader must be specified along with custom attribute list");
+		
+		
 		for (int i = 0; i < buffers; i++) {
-			this.buffers[i] = new Mesh(VertexDataType.VertexArray, false, size * 4, size * 6, new VertexAttribute(Usage.Position, 2,
-				ShaderProgram.POSITION_ATTRIBUTE), new VertexAttribute(Usage.ColorPacked, 4, ShaderProgram.COLOR_ATTRIBUTE),
-				new VertexAttribute(Usage.TextureCoordinates, 2, ShaderProgram.TEXCOORD_ATTRIBUTE + "0"));
+			VertexAttribute[] attribs = cAttribList;
+			
+			//use default attributes
+			if (genAttribCount <= 0) {
+				attribs = new VertexAttribute[3];
+				attribs[0] = new VertexAttribute(Usage.Position, 2, ShaderProgram.POSITION_ATTRIBUTE); 
+				attribs[1] = new VertexAttribute(Usage.ColorPacked, 4, ShaderProgram.COLOR_ATTRIBUTE);
+				attribs[2] = new VertexAttribute(Usage.TextureCoordinates, 2, ShaderProgram.TEXCOORD_ATTRIBUTE + "0");
+			} else {
+				//if we are using custom attributes, validate them...
+				VertexAttributes attribList = new VertexAttributes(attribs);
+				
+				//update the vertex size (in bytes)
+				vertexSize = attribList.vertexSize;
+			}
+			
+			//create the mesh with our custom attributes
+			this.buffers[i] = new Mesh(VertexDataType.VertexArray, false, size * 4, size * 6, attribs);
 		}
-
+		
 		projectionMatrix.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
-		vertices = new float[size * Sprite.SPRITE_SIZE];
+		vertices = new float[size * vertexSize];
 
 		int len = size * 6;
 		short[] indices = new short[len];
@@ -406,7 +453,16 @@ public class SpriteBatch implements Disposable {
 			v = v2;
 			v2 = tmp;
 		}
-
+		
+		if (customAttribs!=null) {
+			idx = customAttribs.draw(vertices, idx,
+							x1, y1, color, u, v,
+							x2, y2, color, u, v2,
+							x3, y3, color, u2, v2,
+							x4, y4, color, u2, v);
+			return;
+		}
+		
 		vertices[idx++] = x1;
 		vertices[idx++] = y1;
 		vertices[idx++] = color;
@@ -473,6 +529,15 @@ public class SpriteBatch implements Disposable {
 			v = v2;
 			v2 = tmp;
 		}
+		
+		if (customAttribs!=null) {
+			idx = customAttribs.draw(vertices, idx,
+							x, y, color, u, v,
+							x, fy2, color, u, v2,
+							fx2, fy2, color, u2, v2,
+							fx2, y, color, u2, v);
+			return;
+		}
 
 		vertices[idx++] = x;
 		vertices[idx++] = y;
@@ -523,6 +588,15 @@ public class SpriteBatch implements Disposable {
 		final float fx2 = x + srcWidth;
 		final float fy2 = y + srcHeight;
 
+		if (customAttribs!=null) {
+			idx = customAttribs.draw(vertices, idx,
+							x, y, color, u, v,
+							x, fy2, color, u, v2,
+							fx2, fy2, color, u2, v2,
+							fx2, y, color, u2, v);
+			return;
+		}
+		
 		vertices[idx++] = x;
 		vertices[idx++] = y;
 		vertices[idx++] = color;
@@ -567,6 +641,15 @@ public class SpriteBatch implements Disposable {
 		final float fx2 = x + width;
 		final float fy2 = y + height;
 
+		if (customAttribs!=null) {
+			idx = customAttribs.draw(vertices, idx,
+							x, y, color, u, v,
+							x, fy2, color, u, v2,
+							fx2, fy2, color, u2, v2,
+							fx2, y, color, u2, v);
+			return;
+		}
+		
 		vertices[idx++] = x;
 		vertices[idx++] = y;
 		vertices[idx++] = color;
@@ -606,6 +689,15 @@ public class SpriteBatch implements Disposable {
 		final float fx2 = x + texture.getWidth();
 		final float fy2 = y + texture.getHeight();
 
+		if (customAttribs!=null) {
+			idx = customAttribs.draw(vertices, idx,
+							x, y, color, 0, 1,
+							x, fy2, color, 0, 0,
+							fx2, fy2, color, 1, 0,
+							fx2, y, color, 1, 1);
+			return;
+		}
+		
 		vertices[idx++] = x;
 		vertices[idx++] = y;
 		vertices[idx++] = color;
@@ -647,6 +739,15 @@ public class SpriteBatch implements Disposable {
 		final float u2 = 1;
 		final float v2 = 0;
 
+		if (customAttribs!=null) {
+			idx = customAttribs.draw(vertices, idx,
+							x, y, color, u, v,
+							x, fy2, color, u, v2,
+							fx2, fy2, color, u2, v2,
+							fx2, y, color, u2, v);
+			return;
+		}
+		
 		vertices[idx++] = x;
 		vertices[idx++] = y;
 		vertices[idx++] = color;
@@ -672,8 +773,15 @@ public class SpriteBatch implements Disposable {
 		vertices[idx++] = v;
 	}
 
-	/** Draws a rectangle using the given vertices. There must be 4 vertices, each made up of 5 elements in this order: x, y, color,
-	 * u, v. The {@link #getColor()} from the SpriteBatch is not applied. */
+	/** Draws a rectangle using the given vertices. If no custom attributes have been specified, 
+	 * the data must be 4 vertices, each made up of 5 elements in this order: x, y, color,
+	 * u, v. The {@link #getColor()} from the SpriteBatch is not applied.
+	 * If custom attribute has been specified in constructor, this method will call
+	 * the draw method of {@link #CustomAttrib} as many times as necessary to pass the given 
+	 * spriteVertices into the batch.
+	 * 
+	 * Using a count that isn't a multiple of 20 may lead to unwanted results in edge cases.
+	 */
 	public void draw (Texture texture, float[] spriteVertices, int offset, int count) {
 		if (!drawing) throw new IllegalStateException("SpriteBatch.begin must be called before draw.");
 
@@ -686,18 +794,80 @@ public class SpriteBatch implements Disposable {
 			renderMesh();
 			remainingVertices = vertices.length;
 		}
-		int copyCount = Math.min(remainingVertices, count);
-		System.arraycopy(spriteVertices, offset, vertices, idx, copyCount);
-		idx += copyCount;
-		count -= copyCount;
-		while (count > 0) {
-			offset += copyCount;
-			renderMesh();
-			copyCount = Math.min(vertices.length, count);
-			System.arraycopy(spriteVertices, offset, vertices, 0, copyCount);
+		
+		//custom vertex layout may be different, so fill each sprite in individually  
+		if (customAttribs!=null) {
+			//the # of floats in one sprite
+			int spriteSize = Sprite.SPRITE_SIZE;
+			
+			while (count > 0) {
+				//if we don't have enough vertices for a single sprite
+				//then render what we've got now
+				if (remainingVertices < spriteSize) {
+					renderMesh();
+					remainingVertices = vertices.length;
+				}
+				
+				//for each chunk of 20
+				
+				//TODO: this seems necessary even without custom attribs 
+				//we can't include part of the data and expect a triangle to render correctly
+				
+				if (count % spriteSize != 0)
+					throw new IllegalArgumentException("count must be a multiple of 20 with customAttribs");
+				
+				idx = fillVertices(spriteVertices, offset);
+				
+				offset += spriteSize;
+				count -= spriteSize;
+				remainingVertices = vertices.length - idx;
+			}
+		} else {
+			int copyCount = Math.min(remainingVertices, count);
+			System.arraycopy(spriteVertices, offset, vertices, idx, copyCount);
 			idx += copyCount;
 			count -= copyCount;
+			while (count > 0) {
+				offset += copyCount;
+				renderMesh();
+				copyCount = Math.min(vertices.length, count);
+				System.arraycopy(spriteVertices, offset, vertices, 0, copyCount);
+				idx += copyCount;
+				count -= copyCount;
+			}
 		}
+	}
+	
+	private int fillVertices(float[] spriteVertices, int offset) {
+		float x1 = spriteVertices[offset++];
+		float y1 = spriteVertices[offset++];
+		float c1 = spriteVertices[offset++];
+		float u1 = spriteVertices[offset++];
+		float v1 = spriteVertices[offset++];
+
+		float x2 = spriteVertices[offset++];
+		float y2 = spriteVertices[offset++];
+		float c2 = spriteVertices[offset++];
+		float u2 = spriteVertices[offset++];
+		float v2 = spriteVertices[offset++];
+		
+		float x3 = spriteVertices[offset++];
+		float y3 = spriteVertices[offset++];
+		float c3 = spriteVertices[offset++];
+		float u3 = spriteVertices[offset++];
+		float v3 = spriteVertices[offset++];
+
+		float x4 = spriteVertices[offset++];
+		float y4 = spriteVertices[offset++];
+		float c4 = spriteVertices[offset++];
+		float u4 = spriteVertices[offset++];
+		float v4 = spriteVertices[offset++];
+		
+		return customAttribs.draw(vertices, idx, 
+					x1, y1, c1, u1, v1,
+					x2, y2, c2, u2, v2, 
+					x3, y3, c3, u3, v3, 
+					x4, y4, c4, u4, v4);
 	}
 
 	/** Draws a rectangle with the bottom left corner at x,y having the width and height of the region. */
@@ -722,6 +892,15 @@ public class SpriteBatch implements Disposable {
 		final float u2 = region.u2;
 		final float v2 = region.v;
 
+		if (customAttribs!=null) {
+			idx = customAttribs.draw(vertices, idx,
+							x, y, color, u, v,
+							x, fy2, color, u, v2,
+							fx2, fy2, color, u2, v2,
+							fx2, y, color, u2, v);
+			return;
+		}
+		
 		vertices[idx++] = x;
 		vertices[idx++] = y;
 		vertices[idx++] = color;
@@ -976,6 +1155,17 @@ public class SpriteBatch implements Disposable {
 			v4 = region.v2;
 		}
 
+
+		if (customAttribs!=null) {
+			idx = customAttribs.draw(vertices, idx,
+							x1, y1, color, u1, v1,
+							x2, y2, color, u2, v2,
+							x3, y3, color, u3, v3,
+							x4, y4, color, u4, v4);
+			return;
+		}
+		
+		
 		vertices[idx++] = x1;
 		vertices[idx++] = y1;
 		vertices[idx++] = color;
@@ -1011,7 +1201,7 @@ public class SpriteBatch implements Disposable {
 
 		renderCalls++;
 		totalRenderCalls++;
-		int spritesInBatch = idx / 20;
+		int spritesInBatch = idx / vertexSize;
 		if (spritesInBatch > maxSpritesInBatch) maxSpritesInBatch = spritesInBatch;
 
 		lastTexture.bind();
