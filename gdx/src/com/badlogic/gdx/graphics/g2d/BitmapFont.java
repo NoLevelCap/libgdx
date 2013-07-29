@@ -148,27 +148,7 @@ public class BitmapFont implements Disposable {
 	 * @param region
 	 * @param integer */
 	public BitmapFont (BitmapFontData data, TextureRegion region, boolean integer) {
-		//use the regions from the data
-		if (region==null) {
-			//load each path
-			this.regions = new TextureRegion[data.imagePaths.length];
-			for (int i=0; i<this.regions.length; i++) {
-				this.regions[i] = new TextureRegion(new Texture(Gdx.files.internal(data.imagePaths[i]), false));
-			}
-		} else {
-			this.regions = new TextureRegion[] {
-				region
-			};
-		}
-		
-		cache = new BitmapFontCache(this);
-		cache.setUseIntegerPositions(integer);
-		
-		this.flipped = data.flipped;
-		this.data = data;
-		this.integer = integer;
-		load(data);
-		ownsTexture = region == null;
+		this(data, region!=null ? new TextureRegion[] { region } : null, integer);
 	}
 
 
@@ -183,8 +163,13 @@ public class BitmapFont implements Disposable {
 		if (regions==null || regions.length==0) {
 			//load each path
 			this.regions = new TextureRegion[data.imagePaths.length];
-			for (int i=0; i<this.regions.length; i++) 
-				this.regions[i] = new TextureRegion(new Texture(Gdx.files.internal(data.imagePaths[i]), false));
+			for (int i=0; i<this.regions.length; i++) {
+				if (data.fontFile == null) {
+					this.regions[i] = new TextureRegion(new Texture(Gdx.files.internal(data.imagePaths[i]), false));
+				} else {
+					this.regions[i] = new TextureRegion(new Texture(Gdx.files.getFileHandle(data.imagePaths[i], data.fontFile.type()), false));
+				}
+			}
 			ownsTexture = true;
 		} else {
 			this.regions = regions;
@@ -456,7 +441,7 @@ public class BitmapFont implements Disposable {
 			start = nextStart;
 			numLines++;
 		}
-		textBounds.width = maxWidth;
+		textBounds.width = maxWidth * data.scaleX;
 		textBounds.height = data.capHeight + (numLines - 1) * data.lineHeight;
 		return textBounds;
 	}
@@ -514,6 +499,7 @@ public class BitmapFont implements Disposable {
 		int index = start;
 		float width = 0;
 		Glyph lastGlyph = null;
+		availableWidth /= data.scaleX;
 
 		if (data.scaleX == 1) {
 			for (; index < end; index++) {
@@ -711,21 +697,16 @@ public class BitmapFont implements Disposable {
 	public BitmapFontData getData () {
 		return data;
 	}
-	
-	/**
-	 * @return whether the texture(s) are owned by the font, font disposes the textures itself if true
-	 */
-	public boolean ownsTexture() {
+
+	/** @return whether the texture is owned by the font, font disposes the texture itself if true */
+	public boolean ownsTexture () {
 		return ownsTexture;
 	}
-	
-	/**
-	 * Sets whether the font owns the texture(s) or not. In case it does,
-	 * the font will also dispose of the textures when {@link #dispose()}
-	 * is called. Use with care!
-	 * @param ownsTexture whether the font owns the texture(s)
-	 */
-	public void setOwnsTexture(boolean ownsTexture) {
+
+	/** Sets whether the font owns the texture or not. In case it does, the font will also dispose of the texture when
+	 * {@link #dispose()} is called. Use with care!
+	 * @param ownsTexture whether the font owns the texture */
+	public void setOwnsTexture (boolean ownsTexture) {
 		this.ownsTexture = ownsTexture;
 	}
 
