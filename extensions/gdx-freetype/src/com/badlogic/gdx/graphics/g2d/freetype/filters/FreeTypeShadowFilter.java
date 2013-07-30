@@ -137,12 +137,12 @@ public class FreeTypeShadowFilter implements FreeTypeFilter {
 		return (retR << 24) | (retG << 16) | (retB << 8) | retA;
 	}
 	
-	public int top() {
-		return padding;
+	public int getYAdvance() {
+		return -padding;
 	}
 	
-	public int left() {
-		return padding;
+	public int getXAdvance() {
+		return -padding;
 	}
 	
 }

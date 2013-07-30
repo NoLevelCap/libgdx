@@ -313,11 +313,10 @@ public class FreeTypeFontGenerator implements Disposable {
 					FreeTypeFilter filter = filters.get(j);
 					pixmap = filter.apply(pixmap);
 					
-					pixWidthDiff += filter.left();
-					pixHeightDiff += filter.top();
+					pixWidthDiff += filter.getXAdvance();
+					pixHeightDiff += filter.getYAdvance();
 				}
 			}
-			 
 			
 			String name = packPrefix + c;
 			Rectangle rect = packer.pack(name, pixmap);
@@ -332,10 +331,10 @@ public class FreeTypeFontGenerator implements Disposable {
 			glyph.page = pIndex;
 			glyph.width = pixmap.getWidth();
 			glyph.height = pixmap.getHeight();
-			glyph.xoffset = slot.getBitmapLeft() - pixWidthDiff;
+			glyph.xoffset = slot.getBitmapLeft() + pixWidthDiff;
 			glyph.yoffset = flip 
-						? -slot.getBitmapTop() + (int)baseLine + pixHeightDiff - pixHeightDiff
-						: -(glyph.height - slot.getBitmapTop()) - (int)baseLine + pixHeightDiff;
+						? -slot.getBitmapTop() + (int)baseLine + pixHeightDiff
+						: -(glyph.height - slot.getBitmapTop()) - (int)baseLine - pixHeightDiff;
 			glyph.xadvance = FreeType.toInt(metrics.getHoriAdvance());
 			glyph.srcX = (int)rect.x;
 			glyph.srcY = (int)rect.y;

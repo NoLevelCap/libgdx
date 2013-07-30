@@ -23,7 +23,7 @@ public interface FreeTypeFilter {
 	 * locations.
 	 * @return
 	 */
-	public int top();
-	public int left();
+	public int getYAdvance();
+	public int getXAdvance();
 	
 }

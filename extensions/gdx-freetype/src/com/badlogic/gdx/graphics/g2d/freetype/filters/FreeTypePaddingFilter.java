@@ -10,12 +10,20 @@ public class FreeTypePaddingFilter implements FreeTypeFilter {
 	public final int top;
 	public final int right;
 	public final int bottom;
+	public final int xadvance;
+	public final int yadvance;
 	
 	public FreeTypePaddingFilter(int left, int top, int right, int bottom) {
+		this(left, top, right, bottom, -left, -top);
+	}
+	
+	public FreeTypePaddingFilter(int left, int top, int right, int bottom, int xadvance, int yadvance) {
 		this.left = left;
 		this.top = top;
 		this.right = right;
 		this.bottom = bottom;
+		this.xadvance = xadvance;
+		this.yadvance = yadvance;
 	}
 	
 	public FreeTypePaddingFilter(int horizontal, int vertical) {
@@ -35,7 +43,11 @@ public class FreeTypePaddingFilter implements FreeTypeFilter {
 		if ( (left==0&&right==0&&top==0&&bottom==0) || ow==0 || oh==0 )
 			return pixmap;
 		
-		Pixmap ret = new Pixmap(ow + left + right, oh + top + bottom, pixmap.getFormat());
+		if (ow + left + right < 0) {
+			System.out.println(ow+","+left+","+right);
+		}
+		//TODO: support negative values
+		Pixmap ret = new Pixmap(ow + Math.abs(left + right), oh + Math.abs(top + bottom), pixmap.getFormat());
 		Pixmap.setFilter(Filter.NearestNeighbour);
 		Pixmap.setBlending(Blending.None);
 		
@@ -44,11 +56,11 @@ public class FreeTypePaddingFilter implements FreeTypeFilter {
 		return ret;
 	}
 	
-	public int top() {
-		return top;
+	public int getYAdvance() {
+		return yadvance;
 	}
 	
-	public int left() {
-		return left;
+	public int getXAdvance() {
+		return xadvance;
 	}
 }

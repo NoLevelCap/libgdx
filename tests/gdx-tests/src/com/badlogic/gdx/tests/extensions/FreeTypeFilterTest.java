@@ -32,7 +32,7 @@ import com.badlogic.gdx.tests.utils.GdxTest;
 public class FreeTypeFilterTest extends GdxTest {
 	
 	SpriteBatch batch;
-	BitmapFont ftFont;
+	BitmapFont ftFont, ftFont2;
 	OrthographicCamera cam;
 	
 	@Override
@@ -41,9 +41,13 @@ public class FreeTypeFilterTest extends GdxTest {
 		FileHandle fontFile = Gdx.files.internal("data/arial.ttf");
 		
 		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(fontFile);
-		generator.addFilter(new FreeTypePaddingFilter(0, 0, 30, 0));
-		generator.addFilter(new FreeTypeShadowFilter(Color.BLACK, 1, 1, 1, 2, 0));
-		ftFont = generator.generateFont(15, FreeTypeFontGenerator.DEFAULT_CHARS, true);
+//		generator.addFilter(new FreeTypePaddingFilter(5, 5, 0, 0, -5, -2));
+//		generator.addFilter(new FreeTypeShadowFilter(Color.BLACK, 1, 1, 1, 2, 5));
+		ftFont = generator.generateFont(15, FreeTypeFontGenerator.DEFAULT_CHARS, false);
+		
+		generator.getFilters().clear();
+		ftFont2 = generator.generateFont(15, FreeTypeFontGenerator.DEFAULT_CHARS, false);
+		
 		generator.dispose();
 		
 		cam = new OrthographicCamera();
@@ -54,13 +58,21 @@ public class FreeTypeFilterTest extends GdxTest {
 		Gdx.gl.glClearColor(0.5f, 0.5f, 0.5f, 1);
 		Gdx.gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
 		
-		cam.setToOrtho(true);
+		cam.setToOrtho(false);
 		batch.setProjectionMatrix(cam.combined);
 		batch.begin();
 		
 		ftFont.setColor(Color.WHITE);
 		ftFont.drawMultiLine(batch, "This is a test\nAnd another line\n()Â§$%&/!12390#", 100, 112);
+		ftFont2.setColor(Color.RED);
+		ftFont2.drawMultiLine(batch, "This is a test\nAnd another line\n()Â§$%&/!12390#", 100, 112);
 		
+		batch.disableBlending();
+		batch.setColor(0f, 0f, 0f, 1f);
+		batch.draw(ftFont.getRegion(), 300, 0, ftFont.getRegion().getRegionWidth()*2, ftFont.getRegion().getRegionHeight()*2);
+		batch.enableBlending();
+		
+		batch.setColor(Color.WHITE);
 		batch.draw(ftFont.getRegion(), 300, 0, ftFont.getRegion().getRegionWidth()*2, ftFont.getRegion().getRegionHeight()*2);
 		batch.end();
 	}
